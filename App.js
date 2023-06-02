@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Touchable, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import * as ExpoDevice from "expo-device";
 import CryptoES from 'crypto-es';
@@ -45,6 +45,7 @@ export default function Home() {
     result = {}
     result[hmac] = body;
     console.log(result);
+    return result;
   };
   const requestAndroid31Permissions = async () => {
     const bluetoothScanPermission = await PermissionsAndroid.request(
@@ -108,9 +109,24 @@ export default function Home() {
     alert(data?.data);
   }, []);
 
+  const main = () => {
+    const body = makeAuthentication('1700928416180', '12345');
+    fetch('http://162.0.238.94/api/smartphone/login', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }).then(response => response.json())
+      .then(data => {
+        console.log(data);
+      });
+    scanForDevices();
+  }
 
   useEffect(() => {
-    fetch('http://162.0.238.94/api/smartphone', {
+    /*fetch('http://162.0.238.94/api/smartphone', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -127,7 +143,7 @@ export default function Home() {
       });
     });
     scanForDevices();
-    makeAuthentication('1700928416180', '12345');
+    makeAuthentication('1700928416180', '12345');*/
   }, []);
 
   const getBondedDevices = async () => {
@@ -162,27 +178,24 @@ export default function Home() {
   };
 
   return (
-    <View style={styles.container}>
-      
+    <View>
+      <Pressable onPress={main} style={buttonStyles.button}>
+        <Text style={buttonStyles.text}>Example button</Text>
+      </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+const buttonStyles = StyleSheet.create({
+  button: {
+    backgroundColor: "#2196F3",
+    borderRadius: 2
   },
-  paragraph: {
-    margin: 24,
-    marginTop: 0,
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  logo: {
-    height: 128,
-    width: 128,
+  text: {
+    color: "#fff",
+    fontWeight: "500",
+    padding: 8,
+    textAlign: "center",
+    textTransform: "uppercase"
   }
 });
