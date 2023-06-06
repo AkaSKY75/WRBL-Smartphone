@@ -36,8 +36,7 @@ export default function Home() {
     body = {
         "appid": APP_ID,
         "cnp": cnp,
-        //"password": crypto.createHash('sha256').update(password).digest('base64');
-        "password": CryptoES.SHA256(password).toString(CryptoES.enc.Hex),
+        "parola": CryptoES.SHA256(password).toString(CryptoES.enc.Hex),
         "nonce": nonce  
     };
     
