@@ -3,8 +3,52 @@ import { View, Text, Pressable, StyleSheet, PermissionsAndroid, Platform } from 
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import * as ExpoDevice from "expo-device";
 import CryptoES from 'crypto-es';
+import BackgroundTimer from 'react-native-background-timer';
+//import * as BackgroundFetch from "expo-background-fetch";
+//import * as TaskManager from "expo-task-manager";
+
+const TASK_NAME = "BACKGROUND_TASK";
+
+/*TaskManager.defineTask(TASK_NAME, () => {
+  try {
+    // fetch data here...
+    const receivedNewData = "Simulated fetch " + Math.random();
+    console.log("My task ", receivedNewData);
+    
+    return BackgroundFetch.BackgroundFetchResult.NoData;
+  } catch (err) {
+    console.log(err, BackgroundFetch.BackgroundFetchResult);
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});*/
 
 export default function Home() {
+  /*const asyncTaskCreate = async () => {
+    try {
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
+      if (isRegistered) {
+         try
+         {
+            await BackgroundFetch.unregisterTaskAsync(TASK_NAME);
+            console.log("Task unregistered successfully!");
+         } catch (err) {
+            console.log('Error when unregistering task: ', err);
+         }
+      }
+
+      try {
+        await BackgroundFetch.registerTaskAsync(TASK_NAME, {
+          minimumInterval: 5, // seconds,
+        });
+        console.log("Task registered");
+      } catch (err) {
+        console.log("Task Register failed:", err);
+      }
+
+    } catch (err) {
+      console.log("Task Registered check failed:", err);
+    }
+  };*/
 
 /*
   Login interface: CNP + Password
@@ -26,6 +70,7 @@ export default function Home() {
   Request permission for Android => We already have it in project from C:\Users\MPSAM\Documents\WRBL\Smartphone
   Implement scan and pair
 */
+
   const APP_ID = "YzfeftUVcZ6twZw1OoVKPRFYTrGEg01Q";
   const APP_SECRET = "4G91qSoboqYO4Y0XJ0LPPKIsq8reHdfa";
   const makeAuthentication = (cnp, password) => {
@@ -121,11 +166,64 @@ export default function Home() {
       .then(data => {
         console.log(data);
       });
-    scanForDevices();
+    
+    tryFindWRBL().then(async (device) => {
+        try {
+          const connected = await device.isConnected();
+          if (connected) {
+            await device.disconnect();
+            console.log("Device disconnected!");
+          }
+          await device.connect();
+          await device.write("0\n", "utf-8");
+          const buff = await device.read();
+          console.log(buff, device);
+          await device.disconnect();
+          const startBackgroundWorker = async () => {
+            BackgroundTimer.runBackgroundTimer(async () => { 
+              //code that will be called every 3 seconds
+              const connected = await device.isConnected();
+              if (!connected) {
+                await device.connect();
+                console.log("Device connected!");
+              }
+              if (device !== null) {
+                //const buff = await device.read();
+                await device.write("0");
+                const buff = await device.read();
+                console.log(buff);
+
+                //BackgroundTimer.stopBackgroundTimer();
+              }
+        
+            }, 250);
+          }
+          //await startBackgroundWorker();
+        } catch (err) {
+          console.log("Error! Could not connect to device! ", err);
+        }
+    });
+
+    /*useEffect(() => {
+      if (device) {
+        //asyncTaskCreate();
+        /*BackgroundTimer.runBackgroundTimer(async () => { 
+          //code that will be called every 3 seconds
+          
+          if (device !== null) {
+            //const buff = await device.read();
+            console.log(device);
+          }
+    
+        }, 3000);
+        console.log(device);
+      }
+        //rest of code will be performing for iOS on background too
+    }, [device]);*/
   }
 
-  useEffect(() => {
-    /*fetch('http://162.0.238.94/api/smartphone', {
+  /*useEffect(() => {
+    fetch('http://162.0.238.94/api/smartphone', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -142,37 +240,47 @@ export default function Home() {
       });
     });
     scanForDevices();
-    makeAuthentication('1700928416180', '12345');*/
-  }, []);
+    makeAuthentication('1700928416180', '12345');
+  }, []);*/
 
   const getBondedDevices = async () => {
     console.log('-- GETTING BONDED DEVICES --');
     try {
       const listBondedDevices = await RNBluetoothClassic.getBondedDevices();
-      console.log(listBondedDevices);
-      const dv = listBondedDevices?.find(e => e.id === "F4:5E:AB:DB:1F:B9");
-      setDevice(dv);
+      //console.log(listBondedDevices);
+      return listBondedDevices?.find(e => { return e.name === "WRBL" && e.id === "00:06:66:F2:34:9F" });
+      
     } catch (err) {
       console.log(err);
     }
   };
 
-  const scanForDevices = async () => {
-    console.log('-- SCANNING FOR DEVICES --');
-    try {
-      RNBluetoothClassic.startDiscovery().then(function(devices){
-        for(var i = 0; i < devices.length; i++)
-        {
-          if(devices[i].name == "WRBL" && devices[i].address == "00:06:66:F2:34:9F") {
-            console.log(devices[i].name + " " + devices[i].address);
-            RNBluetoothClassic.pairDevice(devices[i].address).then(function(device){
-              console.log("Pair successfull");
-            });
-          }
+  const tryFindWRBL = async () => {
+    const isPermissionsEnabled = await requestPermissions();
+    if (isPermissionsEnabled) {
+      const dv = await getBondedDevices();
+      if (dv === null) {
+        console.log('-- SCANNING FOR DEVICES --');
+        try {
+          const listScannedDevices = await RNBluetoothClassic.startDiscovery();
+          //console.log(listScannedDevices);
+          return listScannedDevices?.find(e => { return e.name === "WRBL" && e.id === "00:06:66:F2:34:9F" });
+          /*RNBluetoothClassic.startDiscovery().then(function(devices){
+            for(var i = 0; i < devices.length; i++)
+            {
+              if(devices[i].name == "WRBL" && devices[i].address == "00:06:66:F2:34:9F") {
+                console.log(devices[i].name + " " + devices[i].address);
+                RNBluetoothClassic.pairDevice(devices[i].address).then(function(device){
+                  console.log("Pair successfull");
+                });
+              }
+            }
+          });*/
+        } catch (err) {
+          console.log(err);
         }
-      });
-    } catch (err) {
-      console.log(err);
+      }
+      return dv;
     }
   };
 
