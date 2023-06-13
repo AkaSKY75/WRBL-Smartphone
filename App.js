@@ -23,53 +23,8 @@ const TASK_NAME = "BACKGROUND_TASK";
 });*/
 
 export default function Home() {
-  /*const asyncTaskCreate = async () => {
-    try {
-      const isRegistered = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
-      if (isRegistered) {
-         try
-         {
-            await BackgroundFetch.unregisterTaskAsync(TASK_NAME);
-            console.log("Task unregistered successfully!");
-         } catch (err) {
-            console.log('Error when unregistering task: ', err);
-         }
-      }
 
-      try {
-        await BackgroundFetch.registerTaskAsync(TASK_NAME, {
-          minimumInterval: 5, // seconds,
-        });
-        console.log("Task registered");
-      } catch (err) {
-        console.log("Task Register failed:", err);
-      }
-
-    } catch (err) {
-      console.log("Task Registered check failed:", err);
-    }
-  };*/
-
-/*
-  Login interface: CNP + Password
-  fetch('http://162.0.238.94/api', {
-  method: 'POST',
-  headers: {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    firstParam: 'yourValue',
-    secondParam: 'yourOtherValue',
-  }),
-});
-*/
-
-/*
-  Connect Smartphone to Arduino
-  Request permission for Android => We already have it in project from C:\Users\MPSAM\Documents\WRBL\Smartphone
-  Implement scan and pair
-*/
+  const {subscription, setSubscription} = useState();
 
   const APP_ID = "YzfeftUVcZ6twZw1OoVKPRFYTrGEg01Q";
   const APP_SECRET = "4G91qSoboqYO4Y0XJ0LPPKIsq8reHdfa";
@@ -153,55 +108,69 @@ export default function Home() {
     alert(data?.data);
   }, []);
 
-  const main = () => {
-    const body = makeAuthentication('1700928416180', '12345');
-    fetch('http://162.0.238.94/api/smartphone/login', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    }).then(response => response.json())
-      .then(data => {
-        console.log(data);
-      });
-    
+  const main = async () => {
+
     tryFindWRBL().then(async (device) => {
         try {
-          const connected = await device.isConnected();
-          if (connected) {
-            await device.disconnect();
-            console.log("Device disconnected!");
-          }
-          await device.connect();
-          await device.write("0\n", "utf-8");
-          const buff = await device.read();
-          console.log(buff, device);
-          await device.disconnect();
-          const startBackgroundWorker = async () => {
-            BackgroundTimer.runBackgroundTimer(async () => { 
-              //code that will be called every 3 seconds
-              const connected = await device.isConnected();
-              if (!connected) {
-                await device.connect();
-                console.log("Device connected!");
-              }
-              if (device !== null) {
-                //const buff = await device.read();
-                await device.write("0");
-                const buff = await device.read();
-                console.log(buff);
+          if (device !== undefined) {
+            const connected = await device.isConnected();
+            if (connected === false) {
+              await device.connect();
+              await device.write("0");
+              await device.read();
 
-                //BackgroundTimer.stopBackgroundTimer();
+              /* TO DO */
+              /*
+                  Subscription should be saved globally and not defined after
+                  each button press.
+              */
+              device.onDataReceived(async (data) => {
+                try {
+                  console.log(data);
+                  await device.clear();
+                  await device.disconnect();
+                } catch (err) {
+                  console.log("Error onDataReceived: ", err);
+                }
+              });
+              const startBackgroundWorker = async () => {
+                BackgroundTimer.runBackgroundTimer(async () => { 
+                  //code that will be called every 3 seconds
+                  if (device !== null) {
+                    try
+                    {
+                      await device.connect();
+                      const bytes = await device.available();
+                      if (bytes !== 0) {
+                        const data = await device.read();
+                        console.log(data);
+                      } else {
+                        console.log("No data available!");
+                      }
+                      await device.disconnect();
+    
+                    } catch (err) {
+                      console.log("An error occurred: ", err);
+                    }
+    
+                    //BackgroundTimer.stopBackgroundTimer();
+                  }
+            
+                }, 5000);
               }
-        
-            }, 250);
+              //startBackgroundWorker();
+              //await startBackgroundWorker();
+            }
           }
-          //await startBackgroundWorker();
         } catch (err) {
           console.log("Error! Could not connect to device! ", err);
         }
+          /*device.onDataReceived(async (data) => {
+            console.log(data);
+            await device.disconnect();
+          });*/
+
+
     });
 
     /*useEffect(() => {
@@ -247,7 +216,6 @@ export default function Home() {
     console.log('-- GETTING BONDED DEVICES --');
     try {
       const listBondedDevices = await RNBluetoothClassic.getBondedDevices();
-      //console.log(listBondedDevices);
       return listBondedDevices?.find(e => { return e.name === "WRBL" && e.id === "00:06:66:F2:34:9F" });
       
     } catch (err) {
@@ -259,12 +227,16 @@ export default function Home() {
     const isPermissionsEnabled = await requestPermissions();
     if (isPermissionsEnabled) {
       const dv = await getBondedDevices();
-      if (dv === null) {
+      if (dv === undefined) {
         console.log('-- SCANNING FOR DEVICES --');
         try {
           const listScannedDevices = await RNBluetoothClassic.startDiscovery();
           //console.log(listScannedDevices);
-          return listScannedDevices?.find(e => { return e.name === "WRBL" && e.id === "00:06:66:F2:34:9F" });
+          const device = listScannedDevices?.find(e => { return e.name === "WRBL" && e.id === "00:06:66:F2:34:9F" });
+          if (device !== undefined) {
+            await RNBluetoothClassic.pairDevice(device.id);
+          }
+          return device;
           /*RNBluetoothClassic.startDiscovery().then(function(devices){
             for(var i = 0; i < devices.length; i++)
             {
