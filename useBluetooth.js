@@ -3,8 +3,10 @@ import { View, Text, PermissionsAndroid, Platform } from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import * as ExpoDevice from "expo-device";
 import BackgroundTimer from 'react-native-background-timer';
+import Constants from './constants';
+import CryptoES from 'crypto-es';
 
-export default function BluetoothClassic(onReceivedDataScan) {
+export default function BluetoothClassic() {
   const [device, setDevice] = useState();
   const [data, setData] = useState([]);
   const [connection, setConnection] = useState(false);
@@ -32,7 +34,7 @@ export default function BluetoothClassic(onReceivedDataScan) {
         } catch (err) {
             console.log("An error occurred: ", err);
         }
-    }, 5000);
+    }, 1000); // la 250 target
   }
 
   useEffect(() => {
@@ -196,15 +198,45 @@ export default function BluetoothClassic(onReceivedDataScan) {
     addData(dataReceived);
 
     if(counter < 40) {
-        json += dataReceived.data;
+        //json += dataReceived.data;
         console.log(counter);
-        counter += 1
+        counter += 1;
     } else if(counter == 40) {
-        json += json+"\"}"+dataReceived.data+"}";
+        counter = 41;
+        json += "\"}";
+        console.log(json);
+        console.log(dataReceived.data);
+        json = {
+          ...JSON.parse(json),
+          ...JSON.parse(dataReceived.data)
+        };
+        json["appid"] = Constants.APP_ID;
+        json["nonce"] = Math.random().toString(36).slice(5);
+        json["id_pacient"] = "0"; // Use AsyncStorage here to get id for patient
+        const hmac = CryptoES.HmacSHA256(JSON.stringify(json), Constants.APP_SECRET).toString(CryptoES.enc.Base64);
+        result = {}
+        result[hmac] = json;
+        console.log(result);
+
         counter = 0;
+        /*json["val_senzor_ecg"] = ...
+        json["val_senzor_puls"] = ...
+        json["val_senzor_umiditate"] = ...
+        json["val_senzor_temperatura"] = ...*/
+        fetch('http://162.0.238.94/api/smartphone/add/valori_senzor', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: result
+        }).then((response) => response.json()
+        .then((data) => {
+          console.log(data);
+        }));
     }
-    console.log(json);
-    onReceivedDataScan?.(json);
+    //console.log(json);
+
   };
 
 

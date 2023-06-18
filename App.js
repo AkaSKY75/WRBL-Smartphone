@@ -4,6 +4,7 @@ import { View, Text, Pressable, StyleSheet, PermissionsAndroid, Platform } from 
 import CryptoES from 'crypto-es';
 //import BackgroundTimer from 'react-native-background-timer';
 import useBluetooth from './useBluetooth';
+import Constants from './constants';
 /*import * as BackgroundFetch from "expo-background-fetch";
 import * as TaskManager from "expo-task-manager";
 
@@ -24,30 +25,23 @@ TaskManager.defineTask(TASK_NAME, () => {
 
 export default function Home() {
 
-  const { tryFindWRBL, device, connection, connect, disconnect, data } = useBluetooth(onReceivedDataScan);
-
-  const onReceivedDataScan = useCallback((data) => {
-    console.log('data?.data', data?.data); // ========> Get response here
-    alert(data?.data);
-  }, []);
+  const { tryFindWRBL, device, connection, connect, disconnect, data } = useBluetooth();
 
   //const {subscription, setSubscription} = useState();
 
-  const APP_ID = "YzfeftUVcZ6twZw1OoVKPRFYTrGEg01Q";
-  const APP_SECRET = "4G91qSoboqYO4Y0XJ0LPPKIsq8reHdfa";
   const makeAuthentication = (cnp, password) => {
     const nonce = Math.random()
       .toString(36)
       .slice(5);
 
     body = {
-        "appid": APP_ID,
+        "appid": Constants.APP_ID,
         "cnp": cnp,
         "parola": CryptoES.SHA256(password).toString(CryptoES.enc.Hex),
         "nonce": nonce  
     };
     
-    const hmac = CryptoES.HmacSHA256(JSON.stringify(body), APP_SECRET).toString(CryptoES.enc.Base64);
+    const hmac = CryptoES.HmacSHA256(JSON.stringify(body), Constants.APP_SECRET).toString(CryptoES.enc.Base64);
     result = {}
     result[hmac] = body;
     console.log(result);
