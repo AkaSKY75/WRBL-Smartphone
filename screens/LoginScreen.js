@@ -1,15 +1,14 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, Image } from "react-native";
+import { StyleSheet, Image } from "react-native";
 import Screen from "../components/Screen";
 import ErrorMessage from "../components/forms/ErrorMessage";
 import AppForm from "../components/forms/AppForm";
 import * as Yup from "yup";
 import AppFormField from "../components/forms/AppFormField";
 import SubmitButton from "../components/forms/SubmitButton";
-import CryptoES from "crypto-es";
 import { signIn } from "../serverConnect/connectSV";
-import { useEffect, useContext } from "react";
+import { useContext, useState } from "react";
 import AuthContext from "../auth/context";
+import useAuth from "../auth/useAuth";
 
 const validationSchema = Yup.object().shape({
   cnp: Yup.string().required().min(13).max(13).label("Cnp"),
@@ -17,11 +16,17 @@ const validationSchema = Yup.object().shape({
 });
 
 export default function App() {
-  const { user, setUser } = useContext(AuthContext);
+  // const { user, setUser } = useContext(AuthContext);
+  const { logIn } = useAuth();
+  const { cnpValid, setCNPValid } = useState(true);
+
   const handleSubmit = async ({ cnp, password }) => {
     try {
       const result = await signIn(cnp, password);
-      setUser(result);
+      //.log(result);
+      const parser = JSON.parse(result.data);
+      console.log(parser);
+      logIn(result);
       //if (result.status === "failure") console.log("esuare");
       //else if (result.status === "success") console.log("a mers");
     } catch (error) {
@@ -45,7 +50,7 @@ export default function App() {
           icon="user"
           keyboardType="numeric"
           name="cnp"
-          placeholder="Cnp"
+          placeholder="CNP"
           maxLength={13}
         />
         <AppFormField

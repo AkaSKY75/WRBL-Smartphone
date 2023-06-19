@@ -1,6 +1,4 @@
 import CryptoES from "crypto-es";
-import { useContext } from "react";
-import AuthContext from "../auth/context";
 
 const APP_ID = "YzfeftUVcZ6twZw1OoVKPRFYTrGEg01Q";
 const APP_SECRET = "4G91qSoboqYO4Y0XJ0LPPKIsq8reHdfa";
@@ -29,7 +27,6 @@ export async function signIn(cnp, password) {
   try {
     //console.log(cnp + " " + password);
     const returnHashedBody = makeAuthentication(cnp, password);
-
     return await fetch("http://162.0.238.94/api/smartphone/login", {
       method: "POST",
       headers: {
@@ -40,10 +37,10 @@ export async function signIn(cnp, password) {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.status === "success") {
-          //console.log(data);
-          return data;
-        }
+        //if (data.status === "success") {
+        //console.log(data);
+        return data;
+        // }
       });
   } catch (error) {
     //setLoginFailed(true);

@@ -12,8 +12,10 @@ function WelcomeScreen({ navigation }) {
     >
       <View style={styles.logoContainer}>
         <Image style={styles.logo} source={require("../assets/WRBL.jpg")} />
-        <Text style={styles.tagLine}>Text!</Text>
-        <Text style={styles.tagLine}>Text2!</Text>
+        <Text style={styles.tagLine}>Bine ați venit în aplicația WRBL!</Text>
+        <Text style={styles.tagLine}>
+          Pentru a vă autentifica apăsați butonul de mai jos!
+        </Text>
       </View>
       <View style={styles.buttonsContainer}>
         <AppButton
@@ -52,5 +54,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     paddingVertical: 20,
+    textAlign: "center",
   },
 });
