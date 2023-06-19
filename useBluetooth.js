@@ -34,7 +34,7 @@ export default function BluetoothClassic() {
         } catch (err) {
             console.log("An error occurred: ", err);
         }
-    }, 1000); // la 250 target
+    }, 250); // la 250 target
   }
 
   useEffect(() => {
@@ -109,7 +109,12 @@ export default function BluetoothClassic() {
     uninitializeRead();
   };
 
-
+  function replaceNonAlphaNumeric(str){
+    //console.log(" inainte " + str);
+    const result = str.replace(/[^a-zA-Z0-9]/g,'0');
+    //console.log(" dupa"  + result);
+    return result;
+  }
 
   const initializeRead = () => {
     disconnectSubscription = RNBluetoothClassic.onDeviceDisconnected(() => disconnect(true));
@@ -198,21 +203,28 @@ export default function BluetoothClassic() {
     addData(dataReceived);
 
     if(counter < 40) {
-        //json += dataReceived.data;
+        json += replaceNonAlphaNumeric(dataReceived.data);
         console.log(counter);
         counter += 1;
     } else if(counter == 40) {
         counter = 41;
         json += "\"}";
-        console.log(json);
+        console.log(json, json.length);
         console.log(dataReceived.data);
         json = {
           ...JSON.parse(json),
           ...JSON.parse(dataReceived.data)
         };
+        // {"zdhkiD0tncyg2phTEWn72p8IJE2yRYmaAIUT3EA/mK4=": {"appid": "YzfeftUVcZ6twZw1OoVKPRFYTrGEg01Q",
+        //  "id_pacient": "0", "nonce": "s874rmab", "val_senzor_ecg": "",
+        //  "val_senzor_puls": "0", "val_senzor_temperatura": "14.00", "val_senzor_umiditate": "14.00"}}
         json["appid"] = Constants.APP_ID;
         json["nonce"] = Math.random().toString(36).slice(5);
         json["id_pacient"] = "0"; // Use AsyncStorage here to get id for patient
+        json["is_alert"]= "0";
+        json["accelerometru_x"] = "0";
+        json["accelerometru_y"] = "0";
+        json["accelerometru_z"] = "0";
         const hmac = CryptoES.HmacSHA256(JSON.stringify(json), Constants.APP_SECRET).toString(CryptoES.enc.Base64);
         result = {}
         result[hmac] = json;
@@ -229,8 +241,8 @@ export default function BluetoothClassic() {
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
-          body: result
-        }).then((response) => response.json()
+          body: JSON.stringify(result)
+        }).then((response) => response.text()
         .then((data) => {
           console.log(data);
         }));
